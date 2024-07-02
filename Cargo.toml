@@ -1,0 +1,5 @@
+[workspace]
+members = [
+  "furrctorio_core"
+  ]
+resolver = "2"
