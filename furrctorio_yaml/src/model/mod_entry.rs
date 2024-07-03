@@ -58,3 +58,43 @@ impl ConfigModEntry {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use furrctorio_core::prelude::Context;
+  use semver::VersionReq;
+
+  #[tokio::test]
+  async fn test_get_mod() {
+    let ctx = Context::new("test".to_string(), "values".to_string(), None).await.unwrap();
+
+    let entry = ConfigModEntry::new("stdlib".to_string(), VersionReq::parse("*").unwrap(), true);
+
+    let mod_info = entry.get_mod(&ctx).await.unwrap();
+
+    assert_eq!(mod_info.name, "stdlib");
+  }
+
+  #[tokio::test]
+  async fn test_get_mod_full() {
+    let ctx = Context::new_from_env();
+
+    let entry = ConfigModEntry::new("stdlib".to_string(), VersionReq::parse("*").unwrap(), true);
+
+    let mod_info = entry.get_mod_full(&ctx).await.unwrap();
+
+    assert_eq!(mod_info.name, "stdlib");
+  }
+
+  #[tokio::test]
+  async fn test_find_last_release() {
+    let ctx = Context::new_from_env();
+
+    let entry = ConfigModEntry::new("stdlib".to_string(), VersionReq::parse("*").unwrap(), true);
+
+    let releases = entry.find_last_release(&ctx).await.unwrap();
+
+    assert!(releases.is_some());
+  }
+}
