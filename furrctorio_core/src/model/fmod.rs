@@ -15,8 +15,43 @@ pub enum FMod {
   Full(FModFull),
 }
 
+impl FMod {
+  /// Returns the name of the mod.
+  pub fn name(&self) -> &str {
+    match self {
+      Self::Short(m) => &m.name,
+      Self::Full(m) => &m.name,
+    }
+  }
+
+  pub fn short(&self) -> FModShort {
+    match self {
+      FMod::Short(m) => m.clone(),
+      FMod::Full(m) => FModShort {
+        name: m.name.clone(),
+        owner: m.owner.clone(),
+        title: m.title.clone(),
+        summary: m.summary.clone(),
+        category: m.category.clone(),
+        thumbnail: m.thumbnail.clone(),
+        downloads_count: m.downloads_count,
+        latest_release: m.releases.first().cloned(),
+        releases: m.releases.clone(),
+      },
+    }
+  }
+
+  pub async fn full(&self, ctx: &Context) -> FModFull {
+    match self {
+      Self::Full(m) => m.clone(),
+      Self::Short(m) => {
+        ctx.get_mod_info_full(m.name.as_str()).await.unwrap()
+      }
+    }
+  }
+}
 /// Represents a full Factorio mod with detailed information.
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub struct FModFull {
   /// The total number of downloads for the mod.
   pub downloads_count: usize,
@@ -76,7 +111,7 @@ pub struct FModFull {
 }
 
 /// Represents the license that applies to a Factorio mod.
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub struct License {
   /// A short description of the license.
   pub description: String,
@@ -95,7 +130,7 @@ pub struct License {
 }
 
 /// Represents the tags that categorize a Factorio mod.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub enum FModTag {
   /// Transportation of the player, be it vehicles or teleporters.
@@ -133,7 +168,7 @@ pub enum FModTag {
 }
 
 /// Represents a short Factorio mod with basic information.
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub struct FModShort {
   /// The latest version of the mod available for download.
   /// Absent when the namelist parameter is used.
@@ -169,7 +204,7 @@ pub struct FModShort {
 
 /// Represents the category of a Factorio mod.
 /// The category helps users to understand the purpose and scope of the mod.
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub enum FModCategory {
   /// No category.
   #[serde(rename = "no-category")]
@@ -194,7 +229,7 @@ pub enum FModCategory {
 }
 
 /// Represents a release of a Factorio mod.
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub struct FModRelease {
   /// The URL to download the mod release.
   pub download_url: String,
@@ -236,7 +271,7 @@ impl FModRelease {
 }
 
 /// Represents the JSON metadata for a Factorio mod release.
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub struct InfoJSON {
   /// The name of the mod.
   pub name: Option<String>,
@@ -254,7 +289,7 @@ pub struct InfoJSON {
 }
 
 /// Represents a dependency for a Factorio mod.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct FModDependecies {
   /// The name of the dependency.
   pub name: String,
@@ -332,7 +367,7 @@ impl FromStr for FModDependecies {
 }
 
 /// Represents the prefix for a Factorio mod dependency.
-#[derive(Debug, Deserialize, Serialize, Default, PartialEq, Clone, Copy)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone, PartialEq, Copy)]
 pub enum FModPreffix {
   /// The dependency is required.
   #[default]
