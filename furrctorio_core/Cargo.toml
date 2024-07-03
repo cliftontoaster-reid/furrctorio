@@ -12,7 +12,6 @@ reqwest = { version = "0.12.5", features = ["cookies", "json"] }
 semver = { version = "1.0.23", features = ["serde"] }
 serde = { version = "1.0.203", features = ["alloc", "derive", "rc"] }
 serde_json = { version = "1.0.119", features = ["alloc"] }
-serde_yaml = "0.9.34"
 sha1 = "0.10.6"
 tokio = { version = "1.38.0", features = ["fs", "full", "io-std", "io-util", "num_cpus", "process", "test-util", "tokio-macros", "tracing"] }
 tracing = { version = "0.1.40", features = ["async-await", "log"] }
