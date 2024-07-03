@@ -13,3 +13,5 @@ keyring = "2.3.3"
 serde_yaml = "0.9.34"
 tokio = { version = "1.38.0", features = ["fs", "full", "io-std", "io-util", "num_cpus", "process", "test-util", "tokio-macros", "tracing"] }
 tracing = { version = "0.1.40", features = ["async-await", "log"] }
+dirs = "5.0.1"
+reqwest = "0.12.5"
