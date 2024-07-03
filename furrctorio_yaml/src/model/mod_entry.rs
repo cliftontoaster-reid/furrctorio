@@ -67,6 +67,8 @@ mod tests {
 
   #[tokio::test]
   async fn test_get_mod() {
+    dotenv::dotenv().ok();
+    
     let ctx = Context::new_from_env();
 
     let entry = ConfigModEntry::new("stdlib".to_string(), VersionReq::parse("*").unwrap(), true);
@@ -78,6 +80,8 @@ mod tests {
 
   #[tokio::test]
   async fn test_get_mod_full() {
+    dotenv::dotenv().ok();
+
     let ctx = Context::new_from_env();
 
     let entry = ConfigModEntry::new("stdlib".to_string(), VersionReq::parse("*").unwrap(), true);
@@ -89,6 +93,8 @@ mod tests {
 
   #[tokio::test]
   async fn test_find_last_release() {
+    dotenv::dotenv().ok();
+    
     let ctx = Context::new_from_env();
 
     let entry = ConfigModEntry::new("stdlib".to_string(), VersionReq::parse("*").unwrap(), true);
