@@ -67,6 +67,33 @@ impl Context {
     }
   }
 
+  /// Creates a new Context instance from environment variables.
+  ///
+  /// This function retrieves the Factorio username and token from the environment variables
+  /// "FACTORIO_USERNAME" and "FACTORIO_TOKEN" respectively, and uses them to create a new Context instance.
+  ///
+  /// # Panics
+  ///
+  /// This function will panic if either the "FACTORIO_USERNAME" or "FACTORIO_TOKEN" environment variables
+  /// are not set.
+  ///
+  /// # Returns
+  ///
+  /// * `Context` - Returns a new Context instance.
+  pub fn new_from_env() -> Self {
+    Context {
+      // Retrieve the Factorio username from the environment variable "FACTORIO_USERNAME".
+      // If the environment variable is not set, this will panic.
+      username: std::env::var("FACTORIO_USERNAME")
+        .expect("FACTORIO_USERNAME must be set in the environment"),
+
+      // Retrieve the Factorio token from the environment variable "FACTORIO_TOKEN".
+      // If the environment variable is not set, this will panic.
+      token: std::env::var("FACTORIO_TOKEN")
+        .expect("FACTORIO_TOKEN must be set in the environment"),
+    }
+  }
+
   /// Creates a new request builder with the specified method and URL.
   ///
   /// # Arguments
@@ -109,7 +136,7 @@ impl Context {
   ///
   /// * `Result<FModShort, reqwest::Error>` - Returns a Result containing the short mod information or a reqwest::Error.
   pub async fn get_mod_info(&self, mod_name: &str) -> Result<FModShort, reqwest::Error> {
-  self
+    self
       .get_request(
         Method::GET,
         &format!("https://mods.factorio.com/api/mods/{}", encode(mod_name)),
