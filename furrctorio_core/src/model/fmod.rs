@@ -229,7 +229,7 @@ pub enum FModCategory {
 }
 
 /// Represents a release of a Factorio mod.
-#[derive(Debug, Deserialize, Serialize, Default, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct FModRelease {
   /// The URL to download the mod release.
   pub download_url: String,
@@ -240,9 +240,22 @@ pub struct FModRelease {
   /// The ISO 8601 timestamp for when the mod release was released.
   pub released_at: DateTime<Utc>,
   /// The version of the mod release.
-  pub version: Option<Version>,
+  pub version: Version,
   /// The SHA1 hash of the mod release.
   pub sha1: String,
+}
+
+impl Default for FModRelease {
+  fn default() -> Self {
+    Self {
+      download_url: String::new(),
+      file_name: String::new(),
+      info_json: InfoJSON::default(),
+      released_at: DateTime::from_str("2023-01-01T00:00:00Z").unwrap(),
+      version: Version::new(0, 0, 0),
+      sha1: String::new(),
+    }
+  }
 }
 
 impl FModRelease {
