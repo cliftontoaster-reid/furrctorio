@@ -7,6 +7,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  FACTORIO_USERNAME: ${{ secrets.FACTORIO_USERNAME }}
+  FACTORIO_TOKEN: ${{ secrets.FACTORIO_TOKEN }}
 
 jobs: 
   test: 
