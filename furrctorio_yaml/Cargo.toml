@@ -1,0 +1,15 @@
+[package]
+name = "furrctorio_yaml"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+semver = { version = "1.0.23", features = ["serde"] }
+serde = { version = "1.0.203", features = ["alloc", "derive", "rc"] }
+serde_json = { version = "1.0.119", features = ["alloc"] }
+bytes = { version = "1.6.0", features = ["serde"] }
+furrctorio_core = { path = "../furrctorio_core" }
+keyring = "2.3.3"
+serde_yaml = "0.9.34"
+tokio = { version = "1.38.0", features = ["fs", "full", "io-std", "io-util", "num_cpus", "process", "test-util", "tokio-macros", "tracing"] }
+tracing = { version = "0.1.40", features = ["async-await", "log"] }

@@ -621,12 +621,26 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "serde_yaml",
  "sha1",
  "tokio",
  "tracing",
  "url",
  "urlencoding",
+]
+
+[[package]]
+name = "furrctorio_yaml"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "furrctorio_core",
+ "keyring",
+ "semver",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

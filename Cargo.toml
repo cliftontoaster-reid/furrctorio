@@ -1,5 +1,6 @@
 [workspace]
 members = [
-  "furrctorio_core"
-  ]
+  "furrctorio_core",
+  "furrctorio_yaml"
+]
 resolver = "2"
