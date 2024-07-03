@@ -67,7 +67,7 @@ mod tests {
 
   #[tokio::test]
   async fn test_get_mod() {
-    let ctx = Context::new("test".to_string(), "values".to_string(), None).await.unwrap();
+    let ctx = Context::new_from_env();
 
     let entry = ConfigModEntry::new("stdlib".to_string(), VersionReq::parse("*").unwrap(), true);
 

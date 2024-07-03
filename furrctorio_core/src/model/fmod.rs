@@ -542,10 +542,7 @@ mod tests {
     dotenv::dotenv().ok();
 
     let ctx = Arc::new(
-      Context {
-        token: std::env::var("FACTORIO_TOKEN").unwrap(),
-        username: std::env::var("FACTORIO_USERNAME").unwrap(),
-      }
+      Context::new_from_env()
     );
 
     let res = release.download(ctx).await.unwrap();
