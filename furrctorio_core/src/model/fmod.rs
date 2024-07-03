@@ -87,7 +87,7 @@ pub struct FModFull {
   pub created_at: DateTime<Utc>,
 
   /// A longer description of the mod, in text only format.
-  pub description: String,
+  pub description: Option<String>,
 
   /// A URL to the mod's source code.
   pub source_url: Option<Url>,
@@ -104,7 +104,7 @@ pub struct FModFull {
   pub tags: Vec<FModTag>,
 
   /// The license that applies to the mod. See #License.
-  pub licence: License,
+  pub license: License,
 
   /// True if the mod is marked as deprecated by its owner. Absent when false.
   pub deprecated: Option<bool>,
