@@ -4,8 +4,12 @@ use serde_json::{from_value, Value};
 use tracing::{debug, instrument};
 use url::Url;
 use urlencoding::encode;
+use crate::constants::FactorioVersions;
 
-use super::fmod::{FModFull, FModShort};
+use super::{
+  fmod::{FModFull, FModShort},
+  pagination::FModList,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct Context {
@@ -110,10 +114,23 @@ impl Context {
     method: Method,
     url: &str,
     auth: bool,
+    options: Option<Vec<(&str, &str)>>,
   ) -> Result<reqwest::RequestBuilder, url::ParseError> {
     let req_url = if auth {
       // If authentication is required, parse the URL with username and token as parameters.
-      Url::parse_with_params(url, &[("username", &self.username), ("token", &self.token)])?
+      let mut parms = vec![("username", self.username.as_str()), ("token", self.token.as_str())];
+
+      if let Some(opt) = options {
+        for o in opt {
+          parms.push(o);
+        }
+      }
+      Url::parse_with_params(
+        url,
+        &parms,
+      )?
+    } else if let Some(opt) = options {
+      Url::parse_with_params(url, &opt)?
     } else {
       // If authentication is not required, parse the URL as is.
       Url::parse(url)?
@@ -141,6 +158,7 @@ impl Context {
         Method::GET,
         &format!("https://mods.factorio.com/api/mods/{}", encode(mod_name)),
         false,
+        None,
       )
       .unwrap()
       .send()
@@ -167,11 +185,54 @@ impl Context {
           encode(mod_name)
         ),
         false,
+        None,
       )
       .unwrap()
       .send()
       .await
       .unwrap()
+      .json()
+      .await
+  }
+
+  /// Fetches a list of mods from the Factorio mods server.
+  ///
+  /// # Arguments
+  ///
+  /// * `page` - The page number to fetch.
+  /// * `factorio_version` - The Factorio version to filter mods by.
+  ///
+  /// # Returns
+  ///
+  /// * `Result<FModList, reqwest::Error>` - Returns a Result containing the list of mods or a reqwest::Error.
+  pub async fn get_mods(
+    &self,
+    page: usize,
+    factorio_version: Option<FactorioVersions>,
+  ) -> Result<FModList, reqwest::Error> {
+    // Convert the Factorio version to a string if it is provided.
+    let fv_str = factorio_version.map(|fv| fv.to_string());
+
+    // Create a vector of parameters for the request.
+    let mut parms = fv_str.as_ref().map(|txt| vec![("factorio_version", txt.as_str())]).unwrap_or_default();
+
+    // Convert the page number to a string and add it to the parameters.
+    let page_str = page.to_string();
+    parms.push(("page", page_str.as_str()));
+
+    // Create a new request builder with the specified method, URL, and parameters.
+    self
+      .get_request(
+        Method::GET,
+        "https://mods.factorio.com/api/mods",
+        false,
+        Some(parms),
+      )
+      .unwrap()
+      // Send the request and await the response.
+      .send()
+      .await?
+      // Parse the response as JSON and await the result.
       .json()
       .await
   }
