@@ -44,15 +44,13 @@ impl ConfigModEntry {
     if fmod.releases.is_empty() {
       Ok(None)
     } else {
-      let mut releases = fmod
+      let releases = fmod
         .releases
         .clone()
         .iter()
-        .filter(|&r| self.version.matches(&r.version))
+        .filter(|&r| r.match_version(&self.version))
         .cloned()
         .collect::<Vec<FModRelease>>();
-
-      releases.sort_by(|a, b| a.version.partial_cmp(&b.version).unwrap());
 
       Ok(Some(releases.last().unwrap().clone()))
     }

@@ -1,10 +1,10 @@
+use crate::constants::FactorioVersions;
 use reqwest::Method;
 use serde::Deserialize;
 use serde_json::{from_value, Value};
 use tracing::{debug, instrument};
 use url::Url;
 use urlencoding::encode;
-use crate::constants::FactorioVersions;
 
 use super::{
   fmod::{FModFull, FModShort},
@@ -118,17 +118,17 @@ impl Context {
   ) -> Result<reqwest::RequestBuilder, url::ParseError> {
     let req_url = if auth {
       // If authentication is required, parse the URL with username and token as parameters.
-      let mut parms = vec![("username", self.username.as_str()), ("token", self.token.as_str())];
+      let mut parms = vec![
+        ("username", self.username.as_str()),
+        ("token", self.token.as_str()),
+      ];
 
       if let Some(opt) = options {
         for o in opt {
           parms.push(o);
         }
       }
-      Url::parse_with_params(
-        url,
-        &parms,
-      )?
+      Url::parse_with_params(url, &parms)?
     } else if let Some(opt) = options {
       Url::parse_with_params(url, &opt)?
     } else {
@@ -214,7 +214,10 @@ impl Context {
     let fv_str = factorio_version.map(|fv| fv.to_string());
 
     // Create a vector of parameters for the request.
-    let mut parms = fv_str.as_ref().map(|txt| vec![("factorio_version", txt.as_str())]).unwrap_or_default();
+    let mut parms = fv_str
+      .as_ref()
+      .map(|txt| vec![("factorio_version", txt.as_str())])
+      .unwrap_or_default();
 
     // Convert the page number to a string and add it to the parameters.
     let page_str = page.to_string();
@@ -235,5 +238,83 @@ impl Context {
       // Parse the response as JSON and await the result.
       .json()
       .await
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use core::panic;
+
+use super::*;
+
+  #[tokio::test]
+  async fn test_get_mods() {
+    dotenv::dotenv().ok();
+    let ctx = Context::new_from_env();
+    let mods = ctx.get_mods(1, None).await.unwrap();
+
+    assert_eq!(mods.pagination.page, 1);
+    assert_eq!(
+      Url::parse_with_params(
+        "https://mods.factorio.com/api/mods",
+        &[("page", mods.pagination.page_count.to_string().as_str())]
+      )
+      .unwrap(),
+      mods.pagination.links.last.unwrap()
+    );
+    assert!(mods.pagination.links.first.is_none());
+
+    // Checks `next` and `prev` links
+    assert_eq!(
+      Url::parse_with_params(
+        "https://mods.factorio.com/api/mods",
+        &[("page", 2.to_string().as_str())]
+      )
+      .unwrap(),
+      mods.pagination.links.next.unwrap()
+    );
+    assert!(mods.pagination.links.prev.is_none());
+  }
+
+  #[tokio::test]
+  async fn test_get_mods_page() {
+    dotenv::dotenv().ok();
+    let ctx = Context::new_from_env();
+    let mods = ctx.get_mods(69, Some(FactorioVersions::V0_18)).await.unwrap_or_else(|e| panic!("{:?}", e));
+
+    assert_eq!(mods.pagination.page, 69);
+    assert_eq!(
+      Url::parse_with_params(
+        "https://mods.factorio.com/api/mods",
+        &[("page", mods.pagination.page_count.to_string().as_str())]
+      )
+      .unwrap(),
+      mods.pagination.links.last.unwrap()
+    );
+    assert_eq!(
+      Url::parse(
+        "https://mods.factorio.com/api/mods"
+      )
+      .unwrap(),
+      mods.pagination.links.first.unwrap()
+    );
+
+    // Checks `next` and `prev` links
+    assert_eq!(
+      Url::parse_with_params(
+        "https://mods.factorio.com/api/mods",
+        &[("page", 70.to_string().as_str())]
+      )
+      .unwrap(),
+      mods.pagination.links.next.unwrap()
+    );
+    assert_eq!(
+      Url::parse_with_params(
+        "https://mods.factorio.com/api/mods",
+        &[("page", 68.to_string().as_str())]
+      )
+      .unwrap(),
+      mods.pagination.links.prev.unwrap()
+    );
   }
 }

@@ -2,7 +2,7 @@ use crate::error::Error;
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
 use semver::{Version, VersionReq};
-use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha1::{Digest, Sha1};
 use std::{fmt::Display, str::FromStr, sync::Arc};
 use url::Url;
@@ -44,9 +44,7 @@ impl FMod {
   pub async fn full(&self, ctx: &Context) -> FModFull {
     match self {
       Self::Full(m) => m.clone(),
-      Self::Short(m) => {
-        ctx.get_mod_info_full(m.name.as_str()).await.unwrap()
-      }
+      Self::Short(m) => ctx.get_mod_info_full(m.name.as_str()).await.unwrap(),
     }
   }
 }
@@ -185,6 +183,7 @@ pub struct FModShort {
 
   /// A list of different versions of the mod available for download.
   /// This is only populated when using the namelist parameter.
+  #[serde(default)]
   pub releases: Vec<FModRelease>,
 
   /// A shorter description of the mod.
@@ -240,9 +239,40 @@ pub struct FModRelease {
   /// The ISO 8601 timestamp for when the mod release was released.
   pub released_at: DateTime<Utc>,
   /// The version of the mod release.
-  pub version: Version,
+  pub version: VersionEncapsulate,
   /// The SHA1 hash of the mod release.
   pub sha1: String,
+}
+
+#[derive(Debug, Clone)]
+pub enum VersionEncapsulate {
+  Version(Version),
+  String(String),
+}
+
+impl<'de> Deserialize<'de> for VersionEncapsulate {
+  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    let value = String::deserialize(deserializer)?;
+    match Version::parse(&value) {
+      Ok(version) => Ok(VersionEncapsulate::Version(version)),
+      Err(_) => Ok(VersionEncapsulate::String(value)),
+    }
+  }
+}
+
+impl Serialize for VersionEncapsulate {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: Serializer,
+  {
+    match self {
+      VersionEncapsulate::Version(version) => version.to_string().serialize(serializer),
+      VersionEncapsulate::String(string) => string.serialize(serializer),
+    }
+  }
 }
 
 impl Default for FModRelease {
@@ -252,7 +282,7 @@ impl Default for FModRelease {
       file_name: String::new(),
       info_json: InfoJSON::default(),
       released_at: DateTime::from_str("2023-01-01T00:00:00Z").unwrap(),
-      version: Version::new(0, 0, 0),
+      version: VersionEncapsulate::Version(Version::new(0, 0, 0)),
       sha1: String::new(),
     }
   }
@@ -280,6 +310,22 @@ impl FModRelease {
     let mut hasher = Sha1::new();
     hasher.update(data);
     format!("{:x}", hasher.finalize()).to_lowercase() == self.sha1
+  }
+
+  pub fn match_version(&self, version_req: &VersionReq) -> bool {
+    match &self.version {
+      VersionEncapsulate::Version(version) => version_req.matches(version),
+      VersionEncapsulate::String(version_str) => {
+        if version_str.starts_with("0.0.") {
+          let req =
+            VersionReq::parse(&version_req.clone().to_string().replace("0.0.", "0.1.")).unwrap();
+
+          req.matches(&Version::parse(&version_str.replace("0.0.", "0.1.")).unwrap())
+        } else {
+          panic!("VersionReq cannot be parsed")
+        }
+      }
+    }
   }
 }
 
@@ -323,16 +369,21 @@ impl<'de> Deserialize<'de> for FModDependecies {
 }
 
 impl Serialize for FModDependecies {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer {
-      match (self.required_version.clone(), self.preffix) {
-        (Some(version), FModPreffix::Required) => serializer.serialize_str(&format!("{} {}", self.name, version)),
-        (Some(version), preffix) => serializer.serialize_str(&format!("{} {} {}", preffix, self.name, version)),
-        (None, FModPreffix::Required) => serializer.serialize_str(&self.name),
-        (None, preffix) => serializer.serialize_str(&format!("{} {}", preffix, self.name)),
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    match (self.required_version.clone(), self.preffix) {
+      (Some(version), FModPreffix::Required) => {
+        serializer.serialize_str(&format!("{} {}", self.name, version))
       }
+      (Some(version), preffix) => {
+        serializer.serialize_str(&format!("{} {} {}", preffix, self.name, version))
+      }
+      (None, FModPreffix::Required) => serializer.serialize_str(&self.name),
+      (None, preffix) => serializer.serialize_str(&format!("{} {}", preffix, self.name)),
     }
+  }
 }
 
 impl FromStr for FModDependecies {
@@ -541,9 +592,7 @@ mod tests {
     .unwrap();
     dotenv::dotenv().ok();
 
-    let ctx = Arc::new(
-      Context::new_from_env()
-    );
+    let ctx = Arc::new(Context::new_from_env());
 
     let res = release.download(ctx).await.unwrap();
 
