@@ -44,13 +44,14 @@ impl ConfigModEntry {
     if fmod.releases.is_empty() {
       Ok(None)
     } else {
-      let releases = fmod
+      let mut releases = fmod
         .releases
         .clone()
         .iter()
         .filter(|&r| r.match_version(&self.version))
         .cloned()
         .collect::<Vec<FModRelease>>();
+      releases.sort();
 
       Ok(Some(releases.last().unwrap().clone()))
     }
@@ -100,5 +101,11 @@ mod tests {
     let releases = entry.find_last_release(&ctx).await.unwrap();
 
     assert!(releases.is_some());
+
+    let rel = releases.unwrap();
+    let binding = entry.get_mod(&ctx).await.unwrap();
+    let max_version = binding.releases.iter().max().unwrap();
+
+    assert_eq!(&rel, max_version);
   }
 }

@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use semver::{Version, VersionReq};
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use sha1::{Digest, Sha1};
-use std::{fmt::Display, str::FromStr, sync::Arc};
+use std::{cmp::Ordering, fmt::Display, str::FromStr, sync::Arc};
 use url::Url;
 
 use super::context::Context;
@@ -250,6 +250,15 @@ pub enum VersionEncapsulate {
   String(String),
 }
 
+impl ToString for VersionEncapsulate {
+  fn to_string(&self) -> String {
+    match self {
+      VersionEncapsulate::Version(version) => version.to_string(),
+      VersionEncapsulate::String(string) => string.clone(),
+    }
+  }
+}
+
 impl<'de> Deserialize<'de> for VersionEncapsulate {
   fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
   where
@@ -325,6 +334,65 @@ impl FModRelease {
           panic!("VersionReq cannot be parsed")
         }
       }
+    }
+  }
+}
+
+impl PartialEq for FModRelease {
+  fn eq(&self, other: &Self) -> bool {
+    self.sha1 == other.sha1
+  }
+}
+
+impl Eq for FModRelease {}
+
+impl PartialOrd for FModRelease {
+  fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+    Some(self.cmp(other))
+  }
+}
+
+impl Ord for FModRelease {
+  fn cmp(&self, other: &Self) -> Ordering {
+    match &self.version {
+      VersionEncapsulate::Version(version) => {match &other.version {
+        VersionEncapsulate::Version(other_version) => version.cmp(other_version),
+        VersionEncapsulate::String(other_str) => {
+          let ver_vec: Vec<usize> = version.to_string().split(".").map(|part| part.parse::<usize>().unwrap()).collect();
+          let oth_vec: Vec<usize> = other_str.split(".").map(|part| part.parse::<usize>().unwrap()).collect();
+
+          if ver_vec.len() != oth_vec.len() {
+            panic!("Versions are weird!!!");
+          }
+
+          let mut res = Ordering::Equal;
+
+          for i in 0..ver_vec.len() {
+            res = ver_vec[i].cmp(&oth_vec[i])
+          };
+
+          res
+        },
+      }},
+      VersionEncapsulate::String(other) => {
+        let ver_vec: Vec<usize> = match &self.version{
+          VersionEncapsulate::Version(ver) => ver.to_string(),
+          VersionEncapsulate::String(str) => str.clone(),
+        }.split(".").map(|part| part.parse::<usize>().unwrap()).collect();  
+        let oth_vec: Vec<usize> = other.split(".").map(|part| part.parse::<usize>().unwrap()).collect();
+
+        if ver_vec.len() != oth_vec.len() {
+          panic!("Versions are weird!!!");
+        }
+
+        let mut res = Ordering::Equal;
+
+        for i in 0..ver_vec.len() {
+          res = ver_vec[i].cmp(&oth_vec[i])
+        };
+
+        res
+      },
     }
   }
 }
